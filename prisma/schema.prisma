@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Course Model
+model Course {
+  id            String       @id @default(uuid())
+  title         String
+  instructor    String
+  rating        Float        @default(4.5)
+  price         Float
+  category      String
+  level         String       @default("Intermediate")
+  imageUrl      String?
+  description   String?
+  duration      String       @default("8 Weeks")
+  lessons       Int          @default(0)
+  students      Int          @default(0)
+  enrolledCount Int          @default(0)
+  language      String       @default("English")
+  certificate   Boolean      @default(false)
+  featured      Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  enrollments   Enrollment[]
+}
+
+// 2. Enrollment Model
+model Enrollment {
+  id         String   @id @default(uuid())
+  courseId   String
+  userId     String
+  enrolledAt DateTime @default(now())
+  status     String   @default("active")
+
+  // Foreign key relation
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // একই ইউজার যাতে একটি কোর্সে বারবার এনরোল করতে না পারে
+  @@unique([courseId, userId])
+}
