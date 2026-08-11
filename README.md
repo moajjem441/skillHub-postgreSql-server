@@ -361,6 +361,7 @@ http://localhost:3000
 
 ---
 
+
 # 🚀 Deployment
 
 The backend is deployed on **Vercel** and uses **Neon PostgreSQL** as the production database.
