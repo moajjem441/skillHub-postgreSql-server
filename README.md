@@ -4,7 +4,6 @@ SkillHub is a robust and scalable RESTful API backend built with **Express**, **
 
 ---
 
-
 ## 🚀 Features
 
 * **TypeScript Support:** End-to-end typed code for improved code quality, maintainability, and type safety.
@@ -66,7 +65,7 @@ Make sure you have the following installed:
 Clone the repository and install the dependencies:
 
 ```bash
-git clone https://github.com/your-username/skillhub-postgresql.git
+git clone https://github.com/moajjem441/skillhub-postgresql.git
 cd skillhub-postgresql
 npm install
 ```
@@ -85,13 +84,15 @@ DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@localhost:5432/skillhub?schema
 CLIENT_URL="http://localhost:3000"
 ```
 
-Replace `YOUR_PASSWORD` with your local PostgreSQL password.
+Replace `YOUR_PASSWORD` with your PostgreSQL password.
 
 Make sure a PostgreSQL database named `skillhub` exists before running the migration.
 
+> **Note:** Never commit your `.env` file or expose your database credentials, API keys, or authentication secrets publicly.
+
 ---
 
-### 4. Database Setup & Migrations
+## 🗄️ Database Setup & Migrations
 
 Generate the Prisma Client:
 
@@ -125,9 +126,9 @@ http://localhost:5000
 
 ---
 
-## 🔌 API Endpoints
+# 🔌 API Endpoints
 
-### Public Routes
+## Public Routes
 
 | Method | Endpoint        | Description                      |
 | ------ | --------------- | -------------------------------- |
@@ -138,7 +139,7 @@ http://localhost:5000
 
 ---
 
-### Protected Admin Routes
+## Protected Admin Routes
 
 These routes require JWT authentication.
 
@@ -149,7 +150,7 @@ These routes require JWT authentication.
 
 ---
 
-### Enrollment Routes
+## Enrollment Routes
 
 | Method | Endpoint            | Description                                           |
 | ------ | ------------------- | ----------------------------------------------------- |
@@ -159,7 +160,92 @@ These routes require JWT authentication.
 
 ---
 
-## 🔐 Authentication
+# 🧪 Sample API Payloads
+
+## `GET /courses`
+
+Returns a list of available courses.
+
+**Response:**
+
+```json
+[
+  {
+    "id": "c-1784410318980",
+    "title": "Complete MERN Stack Web Development",
+    "instructor": "Md.Moajjem Hossain",
+    "rating": 4.5,
+    "price": 149,
+    "category": "Web Development",
+    "level": "Intermediate",
+    "duration": "12 Weeks",
+    "lessons": 40,
+    "students": 0,
+    "language": "English",
+    "certificate": true,
+    "featured": false
+  }
+]
+```
+
+---
+
+## `GET /courses/:id`
+
+Example:
+
+```text
+GET /courses/c-1784410318980
+```
+
+Returns details of a specific course.
+
+---
+
+## `POST /admin/course`
+
+Creates a new course.
+
+**Request Body:**
+
+```json
+{
+  "title": "Full-Stack Development",
+  "instructor": "Moajjem Hossain",
+  "rating": 4.8,
+  "price": 50,
+  "category": "Web Development",
+  "level": "Intermediate",
+  "imageUrl": "https://example.com/course-image.jpg",
+  "description": "Learn full-stack web development from scratch.",
+  "duration": "12 Weeks",
+  "lessons": 25,
+  "students": 0,
+  "language": "English",
+  "certificate": true,
+  "featured": false
+}
+```
+
+---
+
+## `POST /enroll`
+
+Enrolls an authenticated user into a course.
+
+**Example Request Body:**
+
+```json
+{
+  "courseId": "c-1784410318980"
+}
+```
+
+The enrollment operation uses a database transaction to safely create the enrollment and update the course enrollment count.
+
+---
+
+# 🔐 Authentication
 
 SkillHub uses **JWT-based authentication** for protected routes.
 
@@ -176,7 +262,7 @@ The authenticated user's information is extracted from the verified JWT token be
 
 ---
 
-## 💾 Database
+# 💾 Database
 
 SkillHub uses **PostgreSQL** as its relational database and **Prisma ORM v6** for database operations.
 
@@ -197,7 +283,7 @@ prisma/schema.prisma
 
 ---
 
-## 🔄 Transactions
+# 🔄 Transactions
 
 The enrollment process uses database transactions to ensure data consistency.
 
@@ -212,7 +298,7 @@ This prevents inconsistent database states.
 
 ---
 
-## 📜 Available Scripts
+# 📜 Available Scripts
 
 ### Development
 
@@ -228,7 +314,7 @@ Starts the development server with hot-reloading using `tsx`.
 npm run build
 ```
 
-Compiles the TypeScript source code into production-ready JavaScript inside the `dist/` directory.
+Compiles the TypeScript source code into production-ready JavaScript.
 
 ### Prisma Client
 
@@ -248,15 +334,25 @@ Creates and applies a new development database migration.
 
 ---
 
-## 🌐 Server URL
+# 🌐 Server URLs
 
-Development server:
+### Production
+
+**Live Production API:**
+
+```text
+https://skillhub-postgre-sql.vercel.app
+```
+
+### Local Development
+
+**Backend:**
 
 ```text
 http://localhost:5000
 ```
 
-Client application:
+**Client Application:**
 
 ```text
 http://localhost:3000
@@ -264,7 +360,34 @@ http://localhost:3000
 
 ---
 
-## 📌 Summary
+# 🚀 Deployment
+
+The backend is deployed on **Vercel** and uses **Neon PostgreSQL** as the production database.
+
+### Production Architecture
+
+```text
+Client Application
+       │
+       ▼
+Vercel Frontend
+       │
+       │ REST API
+       ▼
+Vercel Backend
+       │
+       ▼
+Prisma ORM
+       │
+       ▼
+Neon PostgreSQL
+```
+
+The production database connection is configured through the `DATABASE_URL` environment variable.
+
+---
+
+# 📌 Summary
 
 SkillHub PostgreSQL Server provides a scalable backend architecture for managing:
 
@@ -276,3 +399,11 @@ SkillHub PostgreSQL Server provides a scalable backend architecture for managing
 * 🌐 RESTful API endpoints
 
 The project combines **Express.js, TypeScript, Prisma ORM, and PostgreSQL** to provide a structured and maintainable backend for the SkillHub platform.
+
+---
+
+## 👨‍💻 Author
+
+**Md. Moajjem Hossain**
+
+GitHub: https://github.com/moajjem441
