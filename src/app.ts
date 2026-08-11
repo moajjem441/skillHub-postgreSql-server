@@ -71,7 +71,7 @@ app.get("/courses/data", async (req: Request, res: Response) => {
 // ৩. Get single course by ID
 app.get("/courses/:id", async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+   const id = req.params.id as string;
     const course = await prisma.course.findUnique({
       where: { id },
     });
@@ -148,7 +148,7 @@ app.post("/admin/course", verifyToken, async (req: Request, res: Response) => {
 // ৫. Delete course
 app.delete("/admin/course/:id", verifyToken, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+   const id = req.params.id as string;
 
     await prisma.course.delete({
       where: { id },

@@ -9,27 +9,26 @@ datasource db {
 
 
 
-// 1. Course Model
 model Course {
-  id            String       @id @default(uuid())
-  title         String
-  instructor    String
-  rating        Float        @default(4.5)
-  price         Float
-  category      String
-  level         String       @default("Intermediate")
-  imageUrl      String?
-  description   String?
-  duration      String       @default("8 Weeks")
-  lessons       Int          @default(0)
-  students      Int          @default(0)
-  enrolledCount Int          @default(0)
-  language      String       @default("English")
-  certificate   Boolean      @default(false)
-  featured      Boolean      @default(false)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  enrollments   Enrollment[]
+  id          String   @id @default(uuid())
+  title       String
+  instructor  String
+  rating      Float    @default(0.0)
+  price       Float
+  category    String
+  level       String
+  imageUrl    String?
+  description String?
+  duration    String
+  lessons     Int
+  language    String   @default("English")
+  certificate Boolean  @default(true)
+  featured    Boolean  @default(false)
+  isDeleted   Boolean  @default(false) // Soft Delete
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("courses")
 }
 
 // 2. Enrollment Model
