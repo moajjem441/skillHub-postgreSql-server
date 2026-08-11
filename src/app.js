@@ -1,0 +1,282 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importStar(require("express"));
+const cors_1 = __importDefault(require("cors"));
+const client_1 = require("@prisma/client");
+const jose_cjs_1 = require("jose-cjs");
+const app = (0, express_1.default)();
+const prisma = new client_1.PrismaClient();
+app.use((0, cors_1.default)());
+app.use(express_1.default.json());
+// 🔐 JWT Verification Middleware
+const JWKS = (0, jose_cjs_1.createRemoteJWKSet)(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`));
+const verifyToken = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ message: "Unauthorized: No token provided" });
+    }
+    const token = authHeader.split(" ")[1];
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized: Invalid token format" });
+    }
+    try {
+        const { payload } = await (0, jose_cjs_1.jwtVerify)(token, JWKS);
+        req.user = payload;
+        next();
+    }
+    catch (error) {
+        console.error("JWT Verification Error:", error);
+        if (error.code === "ERR_JWT_EXPIRED") {
+            return res.status(401).json({ message: "Token expired" });
+        }
+        return res.status(403).json({ message: "Forbidden: Invalid token" });
+    }
+};
+// -------------------------------------------------------------
+// 📌 Public Routes
+// -------------------------------------------------------------
+// ১. Get all courses
+app.get("/courses", async (req, res) => {
+    try {
+        const courses = await prisma.course.findMany({
+            orderBy: { createdAt: 'desc' },
+        });
+        res.status(200).json(courses);
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch courses" });
+    }
+});
+// ২. Get top 4 courses
+app.get("/courses/data", async (req, res) => {
+    try {
+        const result = await prisma.course.findMany({
+            take: 4,
+        });
+        res.status(200).json(result);
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch top courses" });
+    }
+});
+// ৩. Get single course by ID
+app.get("/courses/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const course = await prisma.course.findUnique({
+            where: { id },
+        });
+        if (!course) {
+            return res.status(404).json({ message: "Course not found" });
+        }
+        res.status(200).json(course);
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch course details" });
+    }
+});
+// -------------------------------------------------------------
+// 📌 Protected Routes (Admin)
+// -------------------------------------------------------------
+// ৪. Create a new course
+app.post("/admin/course", verifyToken, async (req, res) => {
+    try {
+        const { title, instructor, rating, price, category, level, imageUrl, description, duration, lessons, language, certificate, featured, } = req.body;
+        if (!title || !instructor || !price || !category) {
+            return res.status(400).json({ error: "Required fields missing." });
+        }
+        const course = await prisma.course.create({
+            data: {
+                title,
+                instructor,
+                price: parseFloat(price),
+                category,
+                rating: rating ? parseFloat(rating) : 4.5,
+                level,
+                imageUrl,
+                description,
+                duration,
+                lessons: lessons ? parseInt(lessons) : 0,
+                language,
+                certificate: Boolean(certificate),
+                featured: Boolean(featured),
+            },
+        });
+        res.status(201).json({
+            success: true,
+            message: "Course added successfully",
+            course,
+        });
+    }
+    catch (error) {
+        console.error("Error adding course:", error);
+        res.status(500).json({
+            success: false,
+            error: "Failed to add course. Please try again.",
+        });
+    }
+});
+// ৫. Delete course
+app.delete("/admin/course/:id", verifyToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await prisma.course.delete({
+            where: { id },
+        });
+        res.status(200).json({ message: "Course deleted successfully" });
+    }
+    catch (error) {
+        console.error("Error deleting course:", error);
+        res.status(500).json({ message: "Failed to delete course or Course not found" });
+    }
+});
+// -------------------------------------------------------------
+// 📌 Enrollment Routes
+// -------------------------------------------------------------
+// ৬. Enroll in a course (Transaction ব্যবহার করে নিরাপদ আপডেট)
+app.post("/enroll", async (req, res) => {
+    try {
+        const { courseId, userId } = req.body;
+        if (!courseId || !userId) {
+            return res.status(400).json({ error: "Required fields missing." });
+        }
+        // আগের থেকে এনরোল করা আছে কিনা চেক
+        const existing = await prisma.enrollment.findUnique({
+            where: {
+                courseId_userId: { courseId, userId },
+            },
+        });
+        if (existing) {
+            return res.status(409).json({
+                success: false,
+                message: "You are already enrolled in this course.",
+            });
+        }
+        // Transaction: একসাথে Enrollment তৈরি করবে এবং Course-এর enrolledCount বাড়াবে
+        const [enrollment] = await prisma.$transaction([
+            prisma.enrollment.create({
+                data: { courseId, userId },
+            }),
+            prisma.course.update({
+                where: { id: courseId },
+                data: { enrolledCount: { increment: 1 } },
+            }),
+        ]);
+        res.status(201).json({
+            success: true,
+            message: "Enrollment added successfully",
+            enrollment,
+        });
+    }
+    catch (error) {
+        console.error("Error adding enrollment:", error);
+        res.status(500).json({
+            success: false,
+            error: "Failed to add enrollment. Please try again.",
+        });
+    }
+});
+// ৭. Check Enrollment
+app.get("/check-enrollment", async (req, res) => {
+    try {
+        const { courseId, userId } = req.query;
+        if (!courseId || !userId) {
+            return res.status(400).json({ error: "courseId and userId are required." });
+        }
+        const enrollment = await prisma.enrollment.findUnique({
+            where: {
+                courseId_userId: {
+                    courseId: courseId,
+                    userId: userId,
+                },
+            },
+        });
+        res.status(200).json({
+            success: true,
+            enrolled: !!enrollment,
+            enrollment: enrollment || null,
+        });
+    }
+    catch (error) {
+        console.error("Error checking enrollment:", error);
+        res.status(500).json({
+            success: false,
+            error: "Failed to check enrollment status.",
+        });
+    }
+});
+// ৮. Get user enrolled courses
+app.get("/my-courses", async (req, res) => {
+    try {
+        const { userId } = req.query;
+        if (!userId) {
+            return res.status(400).json({ error: "User ID is required." });
+        }
+        // Relationship-এর সুবিধা নিয়ে এক লাইনে কোর্স ডিটেইলস সহ ফেচ করা
+        const enrollments = await prisma.enrollment.findMany({
+            where: { userId: userId },
+            orderBy: { enrolledAt: "desc" },
+            include: {
+                course: true, // Prisma Relation include
+            },
+        });
+        const result = enrollments.map((e) => ({
+            enrollmentId: e.id,
+            enrolledAt: e.enrolledAt,
+            status: e.status,
+            course: e.course,
+        }));
+        res.status(200).json({ success: true, data: result });
+    }
+    catch (error) {
+        console.error("My Courses error:", error);
+        res.status(500).json({
+            success: false,
+            error: "Failed to fetch enrolled courses.",
+        });
+    }
+});
+app.get("/", (req, res) => {
+    res.send("SkillHub Server Running with Prisma & PostgreSQL!");
+});
+exports.default = app;
+//# sourceMappingURL=app.js.map

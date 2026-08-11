@@ -8,6 +8,7 @@ datasource db {
 }
 
 
+
 // 1. Course Model
 model Course {
   id            String       @id @default(uuid())
